@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <title>Пространственная регрессия</title>
+    <link rel="stylesheet" href="dist/reveal.css" />
+    <link rel="stylesheet" href="dist/theme/simple.css" id="theme" />
+    <link rel="stylesheet" href="plugin/highlight/monokai.css" />
+	<link rel="stylesheet" href="css/layout.css" />
+	<link rel="stylesheet" href="plugin/customcontrols/style.css">
+
+	<link rel="stylesheet" href="plugin/reveal-pointer/pointer.css" />
+
+
+    <script defer src="dist/fontawesome/all.min.js"></script>
+
+	<script type="text/javascript">
+		var forgetPop = true;
+		function onPopState(event) {
+			if(forgetPop){
+				forgetPop = false;
+			} else {
+				parent.postMessage(event.target.location.href, "app://obsidian.md");
+			}
+        }
+		window.onpopstate = onPopState;
+		window.onmessage = event => {
+			if(event.data == "reload"){
+				window.document.location.reload();
+			}
+			forgetPop = true;
+		}
+
+		function fitElements(){
+			const itemsToFit = document.getElementsByClassName('fitText');
+			for (const item in itemsToFit) {
+				if (Object.hasOwnProperty.call(itemsToFit, item)) {
+					var element = itemsToFit[item];
+					fitElement(element,1, 1000);
+					element.classList.remove('fitText');
+				}
+			}
+		}
+
+		function fitElement(element, start, end){
+
+			let size = (end + start) / 2;
+			element.style.fontSize = `${size}px`;
+
+			if(Math.abs(start - end) < 1){
+				while(element.scrollHeight > element.offsetHeight){
+					size--;
+					element.style.fontSize = `${size}px`;
+				}
+				return;
+			}
+
+			if(element.scrollHeight > element.offsetHeight){
+				fitElement(element, start, size);
+			} else {
+				fitElement(element, size, end);
+			}		
+		}
+
+
+		document.onreadystatechange = () => {
+			fitElements();
+			if (document.readyState === 'complete') {
+				if (window.location.href.indexOf("?export") != -1){
+					parent.postMessage(event.target.location.href, "app://obsidian.md");
+				}
+				if (window.location.href.indexOf("print-pdf") != -1){
+					let stateCheck = setInterval(() => {
+						clearInterval(stateCheck);
+						window.print();
+					}, 250);
+				}
+			}
+	};
+
+
+        </script>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides"><section  data-markdown><script type="text/template"><!-- .slide: class="drop" template="tpl-con-title" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+## Пространственная регрессия
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+Пространственная составляющая может влиять на регрессию двумя основными способами:
+
+- если <mark>_процесс, генерирующий данные носит пространственный характер_</mark>, например, заболеваемость людей определенными болезнями может зависеть от загрязненности окружающей среды;
+- если <mark>_пространственная составляющая не влияет напрямую на исходные данные моделирования, но введение ее может значительно улучшить качество модели_</mark>.
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" template="tpl-con-default-box" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+</div>
+
+ 
+## Стандартная линейная регрессия 
+</div>
+
+ <!-- .element: style="font-size: 55px; font-weight: 600; line-height: 1.7" -->
+
+`$P_{i} = \alpha+\sum_kX_{ik}\beta_{k}+\epsilon_{i}$`
+<div class="block">
+
+где `$P_{i}$` - зависимая переменная; 
+
+`$X$` - независимые переменные; 
+
+`$\beta$` - коэффициенты регрессии,
+
+`$\alpha$` - константа, как правило, показывающая значение зависимой переменной, если все независимые равны нулю.
+
+ То есть регрессия без включения пространственной составляющей, которая далее будет называться просто стандартная регрессия
+ 
+ </div>
+
+<!-- .element: style="font-size: 30px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+<img src="Преподавание/Пространственный анализ/Картинки для лекций/Pasted image 20241010102438.png" alt="" style="object-fit: scale-down">
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+</div>
+
+
+## Конструирование признаков (переменная близости)
+</div>
+
+<!-- .element: style="font-size: 45px; line-height: 1.7; display: flex; flex-direction: column; align-items: center; justify-content: center" align="center" -->
+
+<div class="block">
+
+При таком подходе в регрессионную модель просто <mark>вводятся переменные, вычисленные на основе пространственного расположения объектов</mark>.
+
+В качестве примера в датасет введена переменная, показывающая близость объекта к центру города, в качестве которого условно примем центроид нашего набора данных.
+
+Эту переменную можно назвать **_пропущенной переменной с пространственным паттерном (spatially patterned omitted covariate)_** - это географическая информация, позволяющая улучшить прогноз нашей модели.
+</div>
+
+<!-- .element: style="font-size: 30px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+</div>
+
+
+## Пространственная неоднородность
+</div>
+
+<!-- .element: style="font-size: 45px; line-height: 1.7; display: flex; flex-direction: column; align-items: center; justify-content: center" align="center" -->
+
+<div class="block">
+
+Пространственная неоднородность значит, что <mark>_отдельные части модели могут меняться варьироваться от местоположения, изменяться в различных местах_</mark>.
+
+Например, изменение независимого коэффициента может отражать, что в разных областях разное базовое воздействие исследуемого процесса, а изменение коэффициентов при переменных может значить, что есть какой-то опосредованный географический фактор, влияющий на взаимодействие между зависимой и независимыми переменными (например, какое-нибудь ограничение на использование земли в определенных частях города).
+</div>
+
+<!-- .element: style="font-size: 34px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+Наличие пространственной неоднородности при использовании стандартной регрессионной модели:
+
+- ошибки в оценке уровня значимости;
+- смещение оценок параметров;
+- неоптимальные прогнозы;
+- признание существования отношений, которые отсутствуют в действительности;
+- ложное представление о том, что результаты применяются ко всему набору данных (глобально), хотя модель может быть точной только для определенных регионов.
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+Пространственная неоднородность может быть:
+- <mark>дискретной</mark> - в том случае, если есть заранее определенные зоны (пространственные режимы), в которых существует неоднородность и характеристики модели, ее параметры и коэффициенты могут свободно меняться;
+- <mark>непрерывной</mark>, когда коэффициенты регрессии могут свободно изменяться в пространстве (не требуются заранее определенные зоны) - *географически взвешенная регрессия*.
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+</div>
+
+
+## Метод пространственных режимов
+</div>
+
+<!-- .element: style="font-size: 70px; line-height: 1.7; display: flex; flex-direction: column; align-items: center; justify-content: center" align="center" -->
+
+<div class="block">
+
+подход к учету дискретной неоднородности, согласно которому для разных подмножеств набора данных вычисляются разные коэффициенты на основе разных регрессионных моделей.
+</div>
+
+<!-- .element: style="font-size: 50px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+</div>
+
+
+##   Пространственные фиксированные эффекты
+</div>
+
+<!-- .element: style="font-size: 40px; line-height: 1.7; display: flex; flex-direction: column; align-items: center; justify-content: center" align="center" -->
+
+<div class="block">
+
+<mark>Влияние пространственных фиксированных эффектов, как правило, учитывается через свободный член регрессионной модели 𝛼.</mark>
+
+При включении в регрессионную модель возможно, что упускаются из вида факторы, влияющие на зависимую переменную, однако, можно предположить, что они систематически меняются в пространстве.
+
+При построении модели можно учесть эти неявные переменные, введя бинарные переменные на основе пространственного правила (то есть присваивать 1 объектам, находящемся в определенном районе, а остальным - 0).
+</div>
+
+<!-- .element: style="font-size: 32px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+При использовании фиксированных эффектов мы предполагаем, что <mark>_зависимая переменная изменяется не однородно в пространстве, а с учетом какого-то паттерна_</mark>. 
+
+При этом **изменяется только свободный член уравнения модели, а все остальные коэффициенты остаются неизменными на всей территории**.
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+Уравнение регрессии меняется при этом на:
+
+  
+
+`$P_{i} = \alpha_{r} + \sum_kX_{ik}\beta_{k} + \epsilon_{i}$`,
+
+  
+
+где свободный член `$\alpha_{r}$` может меняться в зависимости от района.
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+**Введение фиксированных пространственных эффектов позволяет проконтролировать <mark>скрытые эффекты, которые распределены географически</mark>, то есть мы отчасти изолируем эффекты переменных.**
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+</div>
+
+
+##   Пространственные режимы
+</div>
+
+<!-- .element: style="font-size: 50px; line-height: 1.7; display: flex; flex-direction: column; align-items: center; justify-content: center" align="center" -->
+
+<div class="block">
+
+При использовании пространственных режимов <mark>будет меняться не только свободный член уравнения, но и все остальные переменные</mark>
+
+мы переходим к уравнению:
+</div>
+
+<!-- .element: style="font-size: 40px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
+  
+<div class="block">
+
+`$P_{i} = \alpha_{r} + \sum_kX_{ik}\beta_{k-r} + \epsilon_{i}$`,
+
+</div>
+
+ <!-- .element: style="font-size: 32px; line-height: 1.7; display: flex; flex-direction: column; align-items: center; justify-content: center" align="center" -->
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+Так как значения параметров модели отличаются в пространстве, то может возникнут вопрос: отличаются ли оценки этих переменных статистически?
+
+Для проверки этого используется **тест Чоу (Chow test)**, который позволяет оценить отличаются ли параметры уравнения регрессии после разделения выборки на части.
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+</div>
+
+
+##   Географически взвешенная регрессия
+</div>
+
+<!-- .element: style="font-size: 50px; line-height: 1.7; display: flex; flex-direction: column; align-items: center; justify-content: center" align="center" -->
+
+<div class="block">
+
+локальная форма модели линейной регрессии, используемая для обнаружения неоднородности и анализа изменяющихся пространственных отношений.
+
+Является локальной моделью зависимой переменной, где коэффициенты могут изменяться в пространстве путем подгонки взвешенной модели линейной регрессии к каждому пространственному объекту.
+
+</div>
+
+<!-- .element: style="font-size: 40px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+`$P_{i} = \alpha + \beta_{1i}x_{1i}+\beta_{2i}x_{2i}+...+ \beta_{mi}x_{mi}+\epsilon_{i}$`,
+где 
+- `$i=1,...,n$`
+- `$n$` - общее количество наблюдений
+- `$P_{i}$` - значение зависимой переменной
+- `$x_{mi}$` - наблюдаемое значение независимой переменной
+- `$\alpha$` - точка пересечения модели
+- `$\beta_{1i},\beta_{2i},...,\beta_{mi}$` - коэффициенты
+- `$m$` - общее число независимых переменных
+- `$\epsilon_{i}$` - ошибка.
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+`$\beta_{i}=(X^TW_{i}X)^{-1}X^{T} W_{i}P$`
+- `$P$` - вектор значений зависимой переменной
+- `$X$` - матрица данных с `$n$` наблюдениями для `$m$` независимых переменных
+- `$W_{i}$` - диагональная матрица `$n \times n$`, элементы которой обозначают веса в местоположении `$i$`
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+<img src="Преподавание/Пространственный анализ/Картинки для лекций/Снимок экрана 2024-10-10 в 13.35.21.png" alt="" style="object-fit: scale-down">
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+<div class="block">
+
+> **Пространственная неоднородность - это влияние явлений, которые непосредственно и явно связаны в положением в пространстве, что приводит к кластеризации и пространственной вариации**. 
+> В некоторых случаях мы рассматриваем еще и эффект пространственной конфигурации. 
+</div>
+
+<!-- .element: style="font-size: 36px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+</div>
+
+
+## Пространственная зависимость
+</div>
+
+<!-- .element: style="font-size: 46px; line-height: 1.7; display: flex; flex-direction: column; align-items: center; justify-content: center" align="center" -->
+
+<div class="block">
+
+Пространственная зависимость  <mark>показывает, как окружение влияет на исследуемую переменную</mark>. Такие эффекты значительно отличаются от пространственной неоднородности и появляются благодаря влиянию окружения, то есть это не непосредственно расположение объектов в пространстве, а связь с другими объектами датасета и их пространственное положение относительно друг друга.
+
+Явление, при котором значения наблюдений связаны между собой через расстояние, называется **пространственной зависимостью**.
+
+</div>
+
+<!-- .element: style="font-size: 36px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+<div class="block">
+
+При наличии в данных пространственных автокорреляции и использовании стандартной регрессионной модели:
+ - коэффициенты корреляции будут смещены вверх;
+ - коэффициент детерминации будет смещен вверх, что приведет к тому, что исследователь будет думать о наличии более сильных отношений, чем есть на самом деле;
+ - стандартные ошибки и дисперсия будут смещены вниз;
+ - точность будет преувеличена;
+ - можно сделать ошибочный вывод о существовании отношений, которых нет.
+</div>
+
+<!-- .element: style="font-size: 34px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+Есть несколько способов учитывать пространственную зависимость, общим для них будет являться то, как пространство реализовано, - _матрица пространственных весов_.
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+</div>
+
+
+## Внешние эффекты (SLX модель)
+</div>
+
+<!-- .element: style="font-size: 46px; line-height: 1.7; display: flex; flex-direction: column; align-items: center; justify-content: center" align="center" -->
+
+<div class="block">
+
+Самый простой способ привнести в регрессионную модель пространственную зависимость - это учитывать не только саму переменную, но и ее пространственный лаг.
+
+Включим в регрессионную модель пространственный лаг:
+  
+`$P_{i} = \alpha + \sum_{k=1}^pX_{ij}\beta_{i} + \sum_{k=1}^p\left(\sum_{j=1}^Nw_{ij}x_{jk}\right)\gamma_{k} + \epsilon_{i}$`
+
+где `$\sum_{j=1}^Nw_{ij}x_{jk}$` это пространственный лаг независимой переменной.
+
+</div>
+
+<!-- .element: style="font-size: 34px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+<div class="block">
+
+С использованием матрицы весов, формула может быть преобразована в матричный вид:
+
+`$P_{i} = \alpha + X\beta + WX\gamma + \epsilon$`.
+
+Таким образом, мы фокусируемся на двух основных коэффициентах модели: `$\beta$` и `$\gamma$`.
+
+`$\beta$` показывает на сколько измениться зависимая переменная при изменении независимой переменной `$X_{ik}$` на 1.
+
+Коэффициент `$\gamma$` показывает же непрямую связь между `$X_{i}$` и зависимой переменной. Самая простая интерпреатция этого эффекта состоит в том, что мы таким образом *учитываем связь цены аренды при изменении окружения объекта*. Фактически изменение цены аренды повлечет за собой "перелив" в окрестностях объекта, так как он вызовет изменение пространственного лага.
+
+</div>
+
+<!-- .element: style="font-size: 30px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+<mark>Конкретная величина изменения пространственного лага будет зависеть от структуры матрицы пространственных весов. </mark>
+<div class="block">
+
+Так, например, для объекта с большим числом соседей изменение значения у одного из них повлечет небольшое изменение в пространственном лаге, так как одновременно на объект будут влиять все соседи. Тогда как для объекта с одним соседом изменения повлекут точно такие же изменения в пространственном лаге, так как на него не влияют никакие другие объекты.
+
+</div>
+
+<!-- .element: style="font-size: 32px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+</div>
+
+
+## Пространственная ошибка
+</div>
+
+<!-- .element: style="font-size: 46px; line-height: 1.7; display: flex; flex-direction: column; align-items: center; justify-content: center" align="center" -->
+
+<div class="block">
+
+При использовании пространственной ошибки, в уравнение линейной регрессии в ошибку включается пространственный лаг:
+
+`$P_{i} = \alpha + \sum_k\beta_{k}X_{ki}+ u_{i}$`,
+
+`$u_{i} = \lambda u_{lag-i} + \epsilon_{i}$`,
+
+где `$u_{lag-i} = \sum_{j}w_{i,j}u_{j}$`.
+
+>**Это противоречит стандартному понятию ошибки модели линейной регрессии**, что приводит к необходимости использования альтернативных методов оценки модели.
+</div>
+
+<!-- .element: style="font-size: 30px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+</div>
+
+
+## Пространственный лаг
+</div>
+
+<!-- .element: style="font-size: 46px; line-height: 1.7; display: flex; flex-direction: column; align-items: center; justify-content: center" align="center" -->
+
+<div class="block">
+
+Модель с пространственным лагом включает в себя пространственный лаг в качестве зависимой переменной, что можно привести в виде формулы:
+
+`$P_{i} = \alpha + \rho P_{lag-i} + \sum_k\beta_{k}X_{ki} + \epsilon_{i}$`.
+
+Такая модель **противоречит допущению об экзогенности, то есть в этом уравнении изменение зависимой переменной повлечет за собой изменений независимой**. При выполнении этого допущения связь работает только в одну сторону: независимые переменные влияют на зависимую.
+
+В нашем случае это допущение нарушается, так как `$P_{i}$` существует по обе стороны знака равенства.
+
+</div>
+
+<!-- .element: style="font-size: 32px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+<div class="block">
+
+В качестве исходных данных будут использованы данные о средней стоимости продажи жилой недвижимости и арендной платы в Санкт-Петербурге.
+
+| **Переменная**          | **Описание**                                                                        |
+| ----------------------- | ----------------------------------------------------------------------------------- |
+| **NAME**                | Название муниципального образования                                                 |
+| **ADMIN_L5**            | Район                                                                               |
+| **population**          | Количество населения, чел.                                                          |
+| **area_km2**            | Площадь, кв. км.                                                                    |
+| **sale_price_m2**       | Стоимость 1 метра квадратного, руб.                                                 |
+| **sale_price_new_m2**   | Стоимость 1 метра квадратного в новостройке, руб.                                   |
+| **rent_price**          | Стоимость аренды 1 метра квадратного, руб.                                          |
+| **Sub_na_10000**        | Число субъектов малого и среднего предпринимательства на 10 тысяч человек населения |
+| **construction_permit** | число разрешений на строительство                                                   |
+| **commissioning**       | число разрешений на ввод в эксплуатацию                                             |
+| **kindergartens**       | число детских садов                                                                 |
+| **resident_buildings**  | площадь жилой застройки                                                             |
+</div>
+
+<!-- .element: style="font-size: 20px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+<img src="Преподавание/Пространственный анализ/Картинки для лекций/Снимок экрана 2024-10-10 в 14.32.45.png" alt="" style="object-fit: scale-down">
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+Полученная модель линейной регрессии не высокого качества с коэффициентом детерминации 0,33.
+
+Однако есть вероятность, что эта модель не учитывает значимые факторы, которые не являются явными, например, расположение в центре города.
+
+Проверим, отличается ли распределение остатков для объектов, расположенных в центральной части города, и объектов, не попадающих в эту зону. Для этого сначала введем булевую переменную `is_central`, которая будет показывать, расположен объект в центре города, а потом разделим датасет по ней и построим график распределения для полученных двух наборов данных.
+</div>
+
+<!-- .element: style="font-size: 32px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+<img src="Преподавание/Пространственный анализ/Картинки для лекций/Pasted image 20241010143421.png" alt="" style="object-fit: scale-down">
+
+
+```
+TtestResult(statistic=array([4.92258031]), 
+
+pvalue=array([3.08548674e-06]), df=array([108.]))
+```
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+<img src="Преподавание/Пространственный анализ/Картинки для лекций/Pasted image 20241010143553.png" alt="" style="object-fit: scale-down">
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+<img src="Преподавание/Пространственный анализ/Картинки для лекций/Pasted image 20241010143616.png" alt="" style="object-fit: scale-down">
+
+<div class="block">
+
+Из графика видно, что полученные нами ошибки имеют тенденцию к кластеризации, а так как мы учитывали только одного ближайшего соседа при расчете пространственного лага, это значит, что при переоценке нашей моделью цены недвижимости конкретного МО, также будет переоценена цена недвижимости в соседнем МО.
+</div>
+
+<!-- .element: style="font-size: 28px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+<img src="Преподавание/Пространственный анализ/Картинки для лекций/Pasted image 20241010143737.png" alt="" style="object-fit: scale-down">
+
+
+<div class="block">
+
+На полученной карте _заметны кластеры значений ошибок_, то есть в отдельных частях города стоимость аренды, полученная при построении регрессионной модели, занижается сразу для группы близко расположенных объектов, а для некоторых близко расположенных объектов эта стоимость завышается.
+
+Получается, что <mark>у ошибок есть какое-то географическое распределение и за счет введения пространственной составляющей мы сможем улучшить качество модели.</mark>
+
+</div>
+
+<!-- .element: style="font-size: 24px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+<img src="Преподавание/Пространственный анализ/Картинки для лекций/Pasted image 20241010143908.png" alt="" style="object-fit: scale-down">
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+<img src="Преподавание/Пространственный анализ/Картинки для лекций/Снимок экрана 2024-10-10 в 14.41.53.png" alt="" style="object-fit: scale-down">
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+|Coeff.|Std. Error|P-Value|
+|---|---|---|
+|CONSTANT|170.461178|11.896848|3.589977e-26|
+|population|-0.000116|0.000115|3.152610e-01|
+|Sub_na_10000|0.027876|0.008206|9.721172e-04|
+|construction_permit|-0.433043|3.070618|8.881259e-01|
+|commissioning|0.630652|0.550901|2.549858e-01|
+|kindergartens|0.074079|0.539322|8.910200e-01|
+|resident_buildings|-0.000188|0.000316|5.536048e-01|
+|distance2center|-0.001636|0.000366|2.004137e-05|
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+<img src="Преподавание/Пространственный анализ/Картинки для лекций/Pasted image 20241010145533.png" alt="" style="object-fit: scale-down">
+
+
+<div class="block">
+
+Остатки по-прежнему группируются в кластеры, значит расстояние до центра не смогло значительно улучшить качество модели.
+
+Следует отметить, что в данном случае коэффициент при этой переменной положительный, значит, цена и привлекательность возрастает с удалением от центра.
+</div>
+
+<!-- .element: style="font-size: 26px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+| Район| Коэффициент| Ошибка| p-value |
+|---|---|---|---|
+|ADMIN_L5[Адмиралтейский район]|178.681240|13.003347|2.075268e-23|
+|ADMIN_L5[Василеостровский район]|184.595735|13.202039|7.343011e-24|
+|ADMIN_L5[Выборгский район]|143.734762|12.209834|1.287162e-19|
+|ADMIN_L5[Калининский район]|148.485282|12.921822|4.625953e-19|
+|ADMIN_L5[Кировский район]|135.895023|12.344998|4.237173e-18|
+|ADMIN_L5[Колпинский район]|103.562669|11.909313|2.047054e-13|
+|ADMIN_L5[Красногвардейский район]|134.100224|14.851827|4.291321e-14|
+|ADMIN_L5[Красносельский район]|118.928512|11.736037|2.441791e-16|
+|ADMIN_L5[Кронштадтский район]|112.454359|25.860208|3.746990e-05|
+|ADMIN_L5[Курортный район]|133.492943|8.275593|9.679073e-28|
+|ADMIN_L5[Московский район]|172.786926|14.765993|1.771991e-19|
+|ADMIN_L5[Невский район]|151.891297|11.517876|2.314290e-22|
+|ADMIN_L5[Петроградский район]|239.425055|13.759189|6.480457e-30|
+|ADMIN_L5[Петродворцовый район]|104.970929|15.578685|1.733069e-09|
+|ADMIN_L5[Приморский район]|150.176489|13.457062|2.109994e-18|
+|ADMIN_L5[Пушкинский район]|114.404910|13.761912|1.227819e-12|
+|ADMIN_L5[Фрунзенский район]|147.211385|12.940294|7.819207e-19|
+|ADMIN_L5[Центральный район]|186.848968|15.441770|2.917051e-20|
+</div>
+
+<!-- .element: style="font-size: 16px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+Фактически в этом случае **район используется как категориальная переменная, на основе которой конструируется бинарная**.
+
+>С экономической точки зрения при построении этой модели мы не использовали все стоимости как равные, а рассматривали их только в рамках одного городского района.
+
+Введение фиксированных пространственных эффектов <mark>позволяет проконтролировать скрытые эффекты, которые распределены географически, то есть мы отчасти изолируем эффекты переменных</mark>.
+</div>
+
+<!-- .element: style="font-size: 32px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+| Район | Фиксированный эффект |
+|---|---|
+|Адмиралтейский район|178.681240|
+|Василеостровский район|184.595735|
+|Выборгский район|143.734762|
+|Калининский район|148.485282|
+|Кировский район|135.895023|
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+<img src="Преподавание/Пространственный анализ/Картинки для лекций/Pasted image 20241010150147.png" alt="" style="object-fit: scale-down">
+</div></script></section></div>
+    </div>
+
+    <script src="dist/reveal.js"></script>
+
+    <script src="plugin/markdown/markdown.js"></script>
+    <script src="plugin/highlight/highlight.js"></script>
+    <script src="plugin/zoom/zoom.js"></script>
+    <script src="plugin/notes/notes.js"></script>
+    <script src="plugin/math/math.js"></script>
+	<script src="plugin/mermaid/mermaid.js"></script>
+	<script src="plugin/chart/chart.min.js"></script>
+	<script src="plugin/chart/plugin.js"></script>
+	<script src="plugin/customcontrols/plugin.js"></script>
+	<script src="plugin/reveal-pointer/pointer.js"></script>
+
+    <script>
+      function extend() {
+        var target = {};
+        for (var i = 0; i < arguments.length; i++) {
+          var source = arguments[i];
+          for (var key in source) {
+            if (source.hasOwnProperty(key)) {
+              target[key] = source[key];
+            }
+          }
+        }
+        return target;
+      }
+
+	  function isLight(color) {
+		let hex = color.replace('#', '');
+
+		// convert #fff => #ffffff
+		if(hex.length == 3){
+			hex = `${hex[0]}${hex[0]}${hex[1]}${hex[1]}${hex[2]}${hex[2]}`;
+		}
+
+		const c_r = parseInt(hex.substr(0, 2), 16);
+		const c_g = parseInt(hex.substr(2, 2), 16);
+		const c_b = parseInt(hex.substr(4, 2), 16);
+		const brightness = ((c_r * 299) + (c_g * 587) + (c_b * 114)) / 1000;
+		return brightness > 155;
+	}
+
+	var bgColor = getComputedStyle(document.documentElement).getPropertyValue('--r-background-color').trim();
+	var isLight = isLight(bgColor);
+
+	if(isLight){
+		document.body.classList.add('has-light-background');
+	} else {
+		document.body.classList.add('has-dark-background');
+	}
+
+      // default options to init reveal.js
+      var defaultOptions = {
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+        transition: 'default', // none/fade/slide/convex/concave/zoom
+        plugins: [
+          RevealMarkdown,
+          RevealHighlight,
+          RevealZoom,
+          RevealNotes,
+          RevealMath.MathJax3,
+		  RevealMermaid,
+		  RevealChart,
+		  RevealCustomControls,
+	      RevealPointer,
+        ],
+
+
+    	allottedTime: 120 * 1000,
+
+		mathjax3: {
+			mathjax: 'plugin/math/mathjax/tex-mml-chtml.js',
+		},
+		markdown: {
+		  gfm: true,
+		  mangle: true,
+		  pedantic: false,
+		  smartLists: false,
+		  smartypants: false,
+		},
+
+		mermaid: {
+			theme: isLight ? 'default' : 'dark',
+		},
+
+		customcontrols: {
+			controls: [
+			]
+		},
+      };
+
+      // options from URL query string
+      var queryOptions = Reveal().getQueryHash() || {};
+
+      var options = extend(defaultOptions, {"width":960,"height":700,"margin":0.04,"controls":true,"progress":true,"slideNumber":true,"transition":"none","transitionSpeed":"default"}, queryOptions);
+    </script>
+
+    <script>
+      Reveal.initialize(options);
+    </script>
+  </body>
+
+  <!-- created with Advanced Slides -->
+</html>
