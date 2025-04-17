@@ -104,10 +104,15 @@
 
 </div>
 
+<div class="block">
+
 Пространственная составляющая может влиять на регрессию двумя основными способами:
 
 - если <mark style="background: #ADCCFFA6;">_процесс, генерирующий данные носит пространственный характер_</mark>, например, заболеваемость людей определенными болезнями может зависеть от загрязненности окружающей среды;
 - если <mark style="background: #ADCCFFA6;">_пространственная составляющая не влияет напрямую на исходные данные моделирования, но введение ее может значительно улучшить качество модели</mark>_.
+</div>
+
+ <!-- .element: style="font-size: 35px" -->
 
 <div class="" style="position: absolute; left: 0%; top: 95%; height: 5%; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center" >
 
@@ -274,10 +279,14 @@
 
 </div>
 
+<div class="block">
+
 Пространственная неоднородность может быть:
 - **дискретной** - в том случае, если есть заранее определенные зоны (пространственные режимы), в которых существует неоднородность и характеристики модели, ее параметры и коэффициенты могут свободно меняться;
 - **непрерывной**, когда коэффициенты регрессии могут свободно изменяться в пространстве (не требуются заранее определенные зоны) - *географически взвешенная регрессия*.
+</div>
 
+ <!-- .element: style="font-size: 35px" -->
 
 <div class="" style="position: absolute; left: 0%; top: 95%; height: 5%; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center" >
 
@@ -498,7 +507,7 @@
 ##   Географически взвешенная регрессия
 </div>
 
-<!-- .element: style="font-size: 40px; line-height: 1.7; display: flex; flex-direction: column; align-items: center; justify-content: center" align="center" -->
+<!-- .element: style="font-size: 30px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
 </div>
 
 
@@ -540,7 +549,7 @@
 - `$n$` - общее количество наблюдений
 - `$P_{i}$` - значение зависимой переменной
 - `$x_{mi}$` - наблюдаемое значение независимой переменной
-- `$\alpha$` - точка пересечения модели
+- `$\alpha$` - точка пересечения модели с осью `$Y$`
 - `$\beta_{1i},\beta_{2i},...,\beta_{mi}$` - коэффициенты
 - `$m$` - общее число независимых переменных
 - `$\epsilon_{i}$` - ошибка.
@@ -632,7 +641,7 @@
 
 <div class="block">
 
-При наличии в данных пространственных автокорреляции и использовании стандартной регрессионной модели:
+При наличии в данных пространственных автокорреляции (пространственной зависимости) и использовании стандартной регрессионной модели:
  - коэффициенты корреляции будут смещены вверх;
  - коэффициент детерминации будет смещен вверх, что приведет к тому, что исследователь будет думать о наличии более сильных отношений, чем есть на самом деле;
  - стандартные ошибки и дисперсия будут смещены вниз;
@@ -640,7 +649,7 @@
  - можно сделать ошибочный вывод о существовании отношений, которых нет.
 </div>
 
-<!-- .element: style="font-size: 34px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
+<!-- .element: style="font-size: 30px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
 
 <div class="" style="position: absolute; left: 0%; top: 95%; height: 5%; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center" >
 
@@ -706,7 +715,7 @@
 
 <div class="block">
 
-С использованием матрицы весов, формула может быть преобразована в матричный вид:
+Матричный вид формулы:
 
 `$P_{i} = \alpha + X\beta + WX\gamma + \epsilon$`.
 
@@ -859,6 +868,9 @@
 Модель с пространственным лагом включает в себя пространственный лаг в качестве зависимой переменной, что можно привести в виде формулы:
 
 `$P_{i} = \alpha + \rho P_{lag-i} + \sum_k\beta_{k}X_{ki} + \epsilon_{i}$`.
+</div>
+
+
 
 <div class="" style="position: absolute; left: 0%; top: 95%; height: 5%; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center" >
 
@@ -915,6 +927,7 @@
 | **commissioning**       | число разрешений на ввод в эксплуатацию                                             |
 | **kindergartens**       | число детских садов                                                                 |
 | **resident_buildings**  | площадь жилой застройки                                                             |
+
 </div>
 
 <!-- .element: style="font-size: 20px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
@@ -1128,8 +1141,6 @@ pvalue=array([3.08548674e-06]), df=array([108.]))
 <div class="block">
 
 Остатки по-прежнему группируются в кластеры, значит расстояние до центра не смогло значительно улучшить качество модели.
-
-Следует отметить, что в данном случае коэффициент при этой переменной положительный, значит, цена и привлекательность возрастает с удалением от центра.
 </div>
 
 <!-- .element: style="font-size: 26px; line-height: 1.7; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-evenly" align="left" -->
